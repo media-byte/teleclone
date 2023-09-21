@@ -25,7 +25,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        job_name: ['linux', 'linux_386', 'mac_amd64', 'mac_arm64', 'windows', 'other_os', 'go1.19', 'go1.20']
+        job_name: ['linux', 'mac_arm64', 'windows', 'other_os', 'go1.19', 'go1.20']
 
         include:
           - job_name: linux
