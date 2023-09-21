@@ -1,6 +1,6 @@
 Change lsd command so it doesn't show -1
   * Make sure all Fses show -1 for objects Zero for dates, etc.
-  * Make test?
+  * Make test
 
 Put the TestRemote names into the Fs description
 Make fs/test_all.go use the TestRemote name automatically
