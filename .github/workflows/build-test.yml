@@ -73,12 +73,12 @@ jobs:
       - name: Build rclone
         shell: bash
         run: |
-        make
+            make
   
       - name: Rclone version
         shell: bash
         run: |
-        rclone version
+            rclone version
         
       - name: Built binaries
         shell: bash
