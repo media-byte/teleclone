@@ -137,16 +137,16 @@ jobs:
 
       - name: Create and Push Tag
         run: |
-          $NEW_TAG="v2.0-${{ matrix.os }}"
-          if (-not (git rev-parse -q --verify "refs/tags/$NEW_TAG")) {
-            git tag -a "$NEW_TAG" -m "Release version 2.0 for ${{ matrix.os }}"
+          NEW_TAG="v4.0-${{ matrix.os }}"
+          if [[ ! -n $(git tag -l "$NEW_TAG") ]]; then
+            git tag -a "$NEW_TAG" -m "Release version 4.0 for ${{ matrix.os }}"
             git push origin "$NEW_TAG"
             echo "Created and pushed tag $NEW_TAG"
-          } else {
+          else
             echo "Tag $NEW_TAG already exists. Skipping tag creation."
-          }
+          fi
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}     
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}    
 
   release:
     needs: build
