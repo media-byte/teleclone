@@ -1,0 +1,58 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      manual:
+        description: Manual run (bypass default conditions)
+        type: boolean
+        required: true
+        default: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.21'  # Set the desired Go version
+
+      - name: Build rclone
+        run: |
+          make rclone
+          mkdir -p ${{ runner.workspace }}/bin
+          cp ${{ go env GOPATH }}/bin/rclone* ${{ runner.workspace }}/bin/
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: rclone-binaries
+          path: ${{ runner.workspace }}/bin
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.21'  # Set the desired Go version
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: rclone-binaries
+          path: bin
