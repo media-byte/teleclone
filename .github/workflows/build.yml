@@ -71,7 +71,6 @@ jobs:
             sudo chmod 666 /dev/fuse
             sudo chown root:$USER /etc/fuse.conf
             sudo apt-get install fuse3 libfuse-dev rpm pkg-config
-            fi
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'ubuntu-latest-arm64'
 
       - name: Install Libraries on Windows
