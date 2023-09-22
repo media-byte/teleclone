@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, ubuntu-latest-arm64, windows-latest]
-        goarch: [amd64, arm64, amd64]
+        goarch: [amd64]
 
     steps:
       - name: Checkout
