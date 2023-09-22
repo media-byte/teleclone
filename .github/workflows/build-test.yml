@@ -1,10 +1,10 @@
 name: Build and Release
 
 on:
-  push:
-    branches:
-      - '**'
-  pull_request:
+#   push:
+#     branches:
+#       - '**'
+#   pull_request:
   workflow_dispatch:
     inputs:
       manual:
@@ -25,6 +25,24 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: '1.21'  # Set the desired Go version
+  
+      - name: Set environment variables
+        shell: bash
+        run: |
+        echo 'GOTAGS=${{ matrix.gotags }}' >> $GITHUB_ENV
+        echo 'BUILD_FLAGS=${{ matrix.build_flags }}' >> $GITHUB_ENV
+        echo 'BUILD_ARGS=${{ matrix.build_args }}' >> $GITHUB_ENV
+        if [[ "${{ matrix.goarch }}" != "" ]]; then echo 'GOARCH=${{ matrix.goarch }}' >> $GITHUB_ENV ; fi
+        if [[ "${{ matrix.cgo }}" != "" ]]; then echo 'CGO_ENABLED=${{ matrix.cgo }}' >> $GITHUB_ENV ; fi
+
+      - name: Install Libraries on Linux
+        shell: bash
+        run: |
+        sudo modprobe fuse
+        sudo chmod 666 /dev/fuse
+        sudo chown root:$USER /etc/fuse.conf
+        sudo apt-get install fuse3 libfuse-dev rpm pkg-config
+        if: matrix.os == 'ubuntu-latest'          
 
       - name: Build rclone
         run: |
