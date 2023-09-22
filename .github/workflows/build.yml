@@ -46,6 +46,12 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
+
+      - name: Configure Git
+        run: |
+          git config --global user.email "hackmonker127001@protonmail.com"
+          git config --global user.name "hackmonker"
+
       - name: Checkout
         uses: actions/checkout@v2
 
