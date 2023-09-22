@@ -105,16 +105,8 @@ jobs:
       - name: Check Paths
         shell: bash
         run: |
-            echo "----WD---"            
-            ls ${{ runner.workspace }}
             echo "----go env---"            
-            go env GOPATH
-            echo "----/---"
-            ls /
-            echo "----/home---"
-            ls /home
-            echo "----/home---"
-            find ~ | sed -e "s/[^-][^\/]*\// |/g" -e "s/|\([^ ]\)/|-\1/"            
+            go env GOPATH           
             echo "----~/go/bin---"
             ls ~/go/bin
 
