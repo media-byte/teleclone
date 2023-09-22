@@ -137,9 +137,9 @@ jobs:
 
       - name: Create and Push Tag
         run: |
-          $NEW_TAG="v3.0-${{ matrix.os }}"
+          $NEW_TAG="v2.0-${{ matrix.os }}"
           if (-not (git rev-parse -q --verify "refs/tags/$NEW_TAG")) {
-            git tag -a "$NEW_TAG" -m "Release version 3.0 for ${{ matrix.os }}"
+            git tag -a "$NEW_TAG" -m "Release version 2.0 for ${{ matrix.os }}"
             git push origin "$NEW_TAG"
             echo "Created and pushed tag $NEW_TAG"
           } else {
