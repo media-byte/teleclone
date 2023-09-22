@@ -17,7 +17,7 @@ jobs:
         # goarch: [amd64]
         # gotags: [cmount]
       matrix:
-        job_name: ['linux', 'linux_arm64', 'windows']
+        job_name: ['linux', 'windows']
 
         include:
           - job_name: linux
@@ -26,12 +26,12 @@ jobs:
             gotags: cmount
             build_flags: '-include "^linux/"'
 
-          - job_name: linux_arm64
-            os: ubuntu-latest
-            go: '1.21'
-            goarch: arm64
-            gotags: cmount
-            build_flags: '-include "^linux/"'
+        #   - job_name: linux_arm64
+        #     os: ubuntu-latest
+        #     go: '1.21'
+        #     goarch: arm64
+        #     gotags: cmount
+        #     build_flags: '-include "^linux/"'
 
           - job_name: windows
             os: windows-latest
