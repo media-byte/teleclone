@@ -105,10 +105,12 @@ jobs:
         run: |
           if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then mkdir -p ${{ runner.workspace }}/bin ; fi
           if [[ "${{ matrix.os }}" == "windows-latest" ]]; then mkdir -p ${{ runner.workspace }}\bin ; fi
+          if [[ "${{ matrix.os }}" == "macos-11" ]]; then mkdir -p ${{ runner.workspace }}/bin ; fi
           if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then make release_dep_linux ; fi
           if [[ "${{ matrix.os }}" == "windows-latest" ]]; then make release_dep_windows ; fi
           if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then cp ~/go/bin/rclone${{ env.EXTENSION }} ${{ runner.workspace }}/bin/rclone_${{ matrix.goarch }}${{ env.EXTENSION }} ; fi
           if [[ "${{ matrix.os }}" == "windows-latest" ]]; then cp D:\a\go\bin\rclone.exe ${{ runner.workspace }}\bin\rclone${{ env.EXTENSION }} ; fi
+          if [[ "${{ matrix.os }}" == "macos-11" ]]; then cp ~/go/bin/rclone${{ env.EXTENSION }} ${{ runner.workspace }}/bin/rclone_${{ matrix.goarch }}${{ env.EXTENSION }} ; fi
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v2
