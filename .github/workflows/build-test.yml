@@ -63,40 +63,47 @@ jobs:
         run: |
           mkdir -p ${{ runner.workspace }}/bin
           make rclone
-          cp ${{ runner.workspace }}/rclone${{ env.EXTENSION }} ${{ runner.workspace }}/bin/
+          ls ${{ runner.workspace }}
+          echo "---------"
+          ls ${{ runner.workspace }}/bin
+          echo "---------"
+          ls ${{ runner.workspace }}/go
+          echo "---------"
+          ls ${{ runner.workspace }}/go/bin
+        #   cp ${{ runner.workspace }}/rclone${{ env.EXTENSION }} ${{ runner.workspace }}/bin/
         env:
           GO111MODULE: on
 
-      - name: Show rclone
-        run: |
-          ls ${{ runner.workspace }}
-          ls ${{ runner.workspace }}/bin
-          ${{ runner.workspace }}/bin/rclone${{ env.EXTENSION }} --version
+#       - name: Show rclone
+#         run: |
+#           ls ${{ runner.workspace }}
+#           ls ${{ runner.workspace }}/bin
+#           ${{ runner.workspace }}/bin/rclone${{ env.EXTENSION }} --version
 
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: rclone-binaries-${{ matrix.os }}
-          path: ${{ runner.workspace }}/bin
+#       - name: Upload Artifacts
+#         uses: actions/upload-artifact@v2
+#         with:
+#           name: rclone-binaries-${{ matrix.os }}
+#           path: ${{ runner.workspace }}/bin
 
-  release:
-    needs: build
-    runs-on: ubuntu-latest
+#   release:
+#     needs: build
+#     runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
+#     steps:
+#       - name: Checkout
+#         uses: actions/checkout@v2
 
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: '1.21'
+#       - name: Set up Go
+#         uses: actions/setup-go@v2
+#         with:
+#           go-version: '1.21'
 
-      - name: Download Artifacts
-        uses: actions/download-artifact@v2
-        with:
-          name: rclone-binaries-${{ matrix.os }}
-          path: bin
+#       - name: Download Artifacts
+#         uses: actions/download-artifact@v2
+#         with:
+#           name: rclone-binaries-${{ matrix.os }}
+#           path: bin
 
     #   - name: Create GitHub Release
     #     id: create_release
