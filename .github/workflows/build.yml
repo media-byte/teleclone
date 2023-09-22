@@ -23,6 +23,13 @@ jobs:
             gotags: cmount
             build_flags: '-include "^linux/"'
 
+          - job_name: linux_arm64
+            os: ubuntu-latest-arm64
+            go: '1.21'
+            goarch: 'arm64'
+            gotags: 'cmount'
+            build_flags: '-include "^linux/"'
+
           - job_name: windows
             os: windows-latest
             go: '1.21'
@@ -132,7 +139,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, ubuntu-latest-arm64]
 
     steps:
       - name: Checkout
