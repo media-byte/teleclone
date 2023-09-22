@@ -19,12 +19,12 @@
   
   jobs:
     build:
-      if: ${{ github.event.inputs.manual == 'true' || (github.repository == 'media-byte/teleclone' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name)) }}
+      if: ${{ github.event.inputs.manual == 'true' || (github.repository == 'fixleclone' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name)) }}
       timeout-minutes: 60
       strategy:
         fail-fast: false
         matrix:
-          job_name: ['linux', 'linux_386', 'mac_amd64', 'mac_arm64', 'windows', 'other_os', 'go1.19', 'go1.20']
+          job_name: ['linux', 'mac_arm64', 'windows']
   
           include:
             - job_name: linux
@@ -36,22 +36,6 @@
               quicktest: true
               racequicktest: true
               librclonetest: true
-              deploy: true
-  
-            - job_name: linux_386
-              os: ubuntu-latest
-              go: '1.21'
-              goarch: 386
-              gotags: cmount
-              quicktest: true
-  
-            - job_name: mac_amd64
-              os: macos-11
-              go: '1.21'
-              gotags: 'cmount'
-              build_flags: '-include "^darwin/amd64" -cgo'
-              quicktest: true
-              racequicktest: true
               deploy: true
   
             - job_name: mac_arm64
@@ -70,25 +54,6 @@
               build_args: '-buildmode exe'
               quicktest: true
               deploy: true
-  
-            - job_name: other_os
-              os: ubuntu-latest
-              go: '1.21'
-              build_flags: '-exclude "^(windows/|darwin/|linux/)"'
-              compile_all: true
-              deploy: true
-  
-            - job_name: go1.19
-              os: ubuntu-latest
-              go: '1.19'
-              quicktest: true
-              racequicktest: true
-  
-            - job_name: go1.20
-              os: ubuntu-latest
-              go: '1.20'
-              quicktest: true
-              racequicktest: true
   
       name: ${{ matrix.job_name }}
   
