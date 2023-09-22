@@ -62,7 +62,7 @@ jobs:
       - name: Build rclone
         run: |
             mkdir -p ${{ runner.workspace }}/bin
-            GOPATH="${{ runner.workspace }}/go" make GOTAGS=cmount  # Set GOPATH temporarily and add GOTAGS
+            GOPATH="${{ runner.workspace }}/go" make rclone GOTAGS=cmount  # Set GOPATH temporarily and add GOTAGS
             if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
               BINARY_NAME="rclone.exe"
             else
