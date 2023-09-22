@@ -26,6 +26,7 @@ jobs:
           - job_name: mac_arm64
             os: macos-11
             go: '1.21'
+            goarch: arm64
             gotags: 'cmount'
             build_flags: '-include "^darwin/arm64" -cgo -macos-arch arm64 -cgo-cflags=-I/usr/local/include -cgo-ldflags=-L/usr/local/lib'
 
@@ -89,7 +90,7 @@ jobs:
             Copy-Item -Path $path -Destination (Join-Path (Split-Path -Path $path) 'make.exe')
         if: matrix.os == 'windows-latest'
         
-      - name: Install Libraries on macOS
+    - name: Install Libraries on macOS
         shell: bash
         run: |
           # https://github.com/Homebrew/brew/issues/15621#issuecomment-1619266788
@@ -114,13 +115,21 @@ jobs:
       - name: Built binaries
         shell: bash
         run: |
+          ls ~
+          echo '-----'
+          ls ~/go
+          echo '-----'
+          ls ~/go/bin
+          echo '-----'
+          ls ${{ runner.workspace }}
+          echo '------' 
           if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then mkdir -p ${{ runner.workspace }}/bin ; fi
           if [[ "${{ matrix.os }}" == "windows-latest" ]]; then mkdir -p ${{ runner.workspace }}\bin ; fi
           if [[ "${{ matrix.os }}" == "macos-11" ]]; then mkdir -p ${{ runner.workspace }}/bin ; fi
           if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then make release_dep_linux ; fi
           if [[ "${{ matrix.os }}" == "windows-latest" ]]; then make release_dep_windows ; fi
           if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then cp ~/go/bin/rclone${{ env.EXTENSION }} ${{ runner.workspace }}/bin/rclone_${{ matrix.goarch }}${{ env.EXTENSION }} ; fi
-          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then cp D:\a\go\bin\rclone.exe ${{ runner.workspace }}\bin\rclone${{ env.EXTENSION }} ; fi
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then cp ~/go/bin/rclone.exe ${{ runner.workspace }}/bin/rclone${{ env.EXTENSION }} ; fi
           if [[ "${{ matrix.os }}" == "macos-11" ]]; then cp ~/go/bin/rclone${{ env.EXTENSION }} ${{ runner.workspace }}/bin/rclone_${{ matrix.goarch }}${{ env.EXTENSION }} ; fi
 
       - name: Upload Artifacts
