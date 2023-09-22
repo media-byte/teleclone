@@ -58,7 +58,7 @@ jobs:
         run: |
            ls ${{ runner.workspace }}
            ls ${{ runner.workspace }}/bin
-           rclone --version
+           ${{ runner.workspace }}/bin/rclone --version
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v2
