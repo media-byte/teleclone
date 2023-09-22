@@ -24,7 +24,7 @@ jobs:
             build_flags: '-include "^linux/"'
 
           - job_name: linux_arm64
-            os: ubuntu-latest-arm64
+            os: self-hosted
             go: '1.21'
             goarch: 'arm64'
             gotags: 'cmount'
@@ -71,7 +71,7 @@ jobs:
             sudo chmod 666 /dev/fuse
             sudo chown root:$USER /etc/fuse.conf
             sudo apt-get install fuse3 libfuse-dev rpm pkg-config
-        if: matrix.os == 'ubuntu-latest' || matrix.os == 'ubuntu-latest-arm64'
+        if: matrix.os == 'ubuntu-latest' || matrix.os == 'self-hosted'
 
       - name: Install Libraries on Windows
         shell: powershell
@@ -102,11 +102,12 @@ jobs:
       - name: Built binaries
         shell: bash
         run: |
-            if [[ "${{ matrix.os }}" == "ubuntu-latest" || "${{ matrix.os }}" == "ubuntu-latest-arm64" ]]; then mkdir -p ${{ runner.workspace }}/bin ; fi
+            if [[ "${{ matrix.os }}" == "ubuntu-latest" || "${{ matrix.os }}" == "self-hosted" ]]; then mkdir -p ${{ runner.workspace }}/bin ; fi
             if [[ "${{ matrix.os }}" == "windows-latest" ]]; then mkdir -p D:/a/teleclone/bin ; fi
-            if [[ "${{ matrix.os }}" == "ubuntu-latest" || "${{ matrix.os }}" == "ubuntu-latest-arm64" ]]; then make release_dep_linux ; fi
+            if [[ "${{ matrix.os }}" == "ubuntu-latest" || "${{ matrix.os }}" == "self-hosted" ]]; then make release_dep_linux ; fi
             if [[ "${{ matrix.os }}" == "windows-latest" ]]; then make release_dep_windows ; fi
-            if [[ "${{ matrix.os }}" == "ubuntu-latest" || "${{ matrix.os }}" == "ubuntu-latest-arm64" ]]; then cp ~/go/bin/rclone${{ env.EXTENSION }} ${{ runner.workspace }}/bin/rclone_${{ matrix.goarch }}${{ env.EXTENSION }} ; fi
+            if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then cp ~/go/bin/rclone${{ env.EXTENSION }} ${{ runner.workspace }}/bin/rclone_${{ matrix.goarch }}${{ env.EXTENSION }} ; fi
+            if [[ "${{ matrix.os }}" == "self-hosted" ]]; then cp ~/go/bin/rclone${{ env.EXTENSION }} ${{ runner.workspace }}/bin/rclone_arm64${{ env.EXTENSION }} ; fi
             if [[ "${{ matrix.os }}" == "windows-latest" ]]; then cp ~/go/bin/rclone.exe D:/a/teleclone/bin/rclone.exe ; fi
 
       - name: Upload Artifacts - Linux
@@ -114,7 +115,7 @@ jobs:
         with:
           name: rclone-binaries-${{ matrix.os }}
           path: ${{ runner.workspace }}/bin
-        if: matrix.os == 'ubuntu-latest' || matrix.os == 'ubuntu-latest-arm64'
+        if: matrix.os == 'ubuntu-latest' || matrix.os == 'self-hosted'
         
       - name: Upload Artifacts - Windows
         uses: actions/upload-artifact@v2
@@ -139,7 +140,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, ubuntu-latest-arm64]
+        os: [ubuntu-latest, windows-latest, self-hosted]
 
     steps:
       - name: Checkout
