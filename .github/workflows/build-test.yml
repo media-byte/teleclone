@@ -11,13 +11,38 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-
     strategy:
+    #   matrix:
+        # os: [ubuntu-latest, ubuntu-latest-arm64, windows-latest]
+        # goarch: [amd64]
+        # gotags: [cmount]
       matrix:
-        os: [ubuntu-latest, ubuntu-latest-arm64, windows-latest]
-        goarch: [amd64]
-        gotags: [cmount]
+        job_name: ['linux', 'linux_arm64', 'windows']
+
+        include:
+          - job_name: linux
+            os: ubuntu-latest
+            go: '1.21'
+            gotags: cmount
+            build_flags: '-include "^linux/"'
+
+          - job_name: linux_arm64
+            os: ubuntu-latest
+            go: '1.21'
+            goarch: arm64
+            gotags: cmount
+            build_flags: '-include "^linux/"'
+
+          - job_name: windows
+            os: windows-latest
+            go: '1.21'
+            gotags: cmount
+            build_flags: '-include "^windows/"'
+            build_args: '-buildmode exe'
+
+    runs-on: ${{ matrix.os }}
+
+    name: ${{ matrix.job_name }}
 
     steps:
       - name: Checkout
@@ -31,19 +56,6 @@ jobs:
       - name: Set environment variables
         shell: bash
         run: |
-          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            export GOOS=windows
-            export EXTENSION=".exe"
-          else
-            export GOOS=linux
-            if [[ "${{ matrix.os }}" == "ubuntu-latest-arm64" ]]; then
-              export GOARCH=arm64
-            else
-              export GOARCH="${{ matrix.goarch }}"
-            fi
-            export EXTENSION=""
-          fi
-
           echo "GOTAGS=${{ matrix.gotags }}" >> $GITHUB_ENV
           echo "BUILD_FLAGS=${{ matrix.build_flags }}" >> $GITHUB_ENV
           echo "BUILD_ARGS=${{ matrix.build_args }}" >> $GITHUB_ENV
