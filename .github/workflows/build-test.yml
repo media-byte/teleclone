@@ -61,15 +61,24 @@ jobs:
 
       - name: Build rclone
         run: |
-          mkdir -p ${{ runner.workspace }}/bin
-          make rclone
-          ls ${{ runner.workspace }}
-          echo "---------"
-          ls ${{ runner.workspace }}/bin
-          echo "---------"
-          ls ${{ runner.workspace }}/go
-          echo "---------"
-          ls ${{ runner.workspace }}/go/bin
+            mkdir -p ${{ runner.workspace }}/bin
+            GOPATH="${{ runner.workspace }}/go" make GOTAGS=cmount  # Set GOPATH temporarily and add GOTAGS
+            if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+              BINARY_NAME="rclone.exe"
+            else
+              BINARY_NAME="rclone"
+            fi
+            cp ${{ runner.workspace }}/go/bin/$BINARY_NAME ${{ runner.workspace }}/bin/
+            echo "----WD---"            
+            ls ${{ runner.workspace }}
+            echo "----WD/Bin---"
+            ls ${{ runner.workspace }}/bin
+            echo "----go env---"            
+            go env GOPATH
+            echo "----WD/go---"
+            ls ${{ runner.workspace }}/go
+            echo "----WD/go/bin---"
+            ls ${{ runner.workspace }}/go/bin
         #   cp ${{ runner.workspace }}/rclone${{ env.EXTENSION }} ${{ runner.workspace }}/bin/
         env:
           GO111MODULE: on
