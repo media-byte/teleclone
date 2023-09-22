@@ -1,12 +1,6 @@
 name: Build and Test
 
 on:
-  # push:
-  #   branches:
-  #     - '**'
-  #   tags:
-  #     - '**'
-  # pull_request:
   workflow_dispatch:
     inputs:
       manual:
@@ -19,6 +13,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        os: [ubuntu-latest, ubuntu-latest-arm64, windows-latest]
+        goarch: [amd64, arm64, amd64]
+
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -26,44 +25,58 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
-          go-version: '1.21'  # Set the desired Go version
+          go-version: '1.21'
 
       - name: Set environment variables
         shell: bash
         run: |
-          echo 'GOTAGS=${{ matrix.gotags }}' >> $GITHUB_ENV
-          echo 'BUILD_FLAGS=${{ matrix.build_flags }}' >> $GITHUB_ENV
-          echo 'BUILD_ARGS=${{ matrix.build_args }}' >> $GITHUB_ENV
-          if [[ "${{ matrix.goarch }}" != "" ]]; then echo 'GOARCH=${{ matrix.goarch }}' >> $GITHUB_ENV ; fi
-          if [[ "${{ matrix.cgo }}" != "" ]]; then echo 'CGO_ENABLED=${{ matrix.cgo }}' >> $GITHUB_ENV ; fi
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            export GOOS=windows
+            export EXTENSION=".exe"
+          else
+            export GOOS=linux
+            if [[ "${{ matrix.os }}" == "ubuntu-latest-arm64" ]]; then
+              export GOARCH=arm64
+            else
+              export GOARCH="${{ matrix.goarch }}"
+            fi
+            export EXTENSION=""
+          fi
+
+          echo "GOTAGS=${{ matrix.gotags }}" >> $GITHUB_ENV
+          echo "BUILD_FLAGS=${{ matrix.build_flags }}" >> $GITHUB_ENV
+          echo "BUILD_ARGS=${{ matrix.build_args }}" >> $GITHUB_ENV
+          echo "GOARCH=${{ matrix.goarch }}" >> $GITHUB_ENV
+          echo "CGO_ENABLED=${{ matrix.cgo }}" >> $GITHUB_ENV
 
       - name: Install Libraries on Linux
         shell: bash
         run: |
-          sudo modprobe fuse
-          sudo chmod 666 /dev/fuse
-          sudo chown root:$USER /etc/fuse.conf
-          sudo apt-get install fuse3 libfuse-dev rpm pkg-config
-        if: matrix.os == 'ubuntu-latest'
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" || "${{ matrix.os }}" == "ubuntu-latest-arm64" ]]; then
+            sudo modprobe fuse
+            sudo chmod 666 /dev/fuse
+            sudo chown root:$USER /etc/fuse.conf
+            sudo apt-get install fuse3 libfuse-dev rpm pkg-config
+          fi
 
       - name: Build rclone
         run: |
           mkdir -p ${{ runner.workspace }}/bin
-          GOPATH="${{ runner.workspace }}/go" make rclone  # Set GOPATH temporarily
-          cp ${{ runner.workspace }}/go/bin/* ${{ runner.workspace }}/bin/  # Copy all binaries
+          make rclone  # No need to set GOPATH as we're using a matrix strategy
+          cp ${{ runner.workspace }}/go/bin/rclone${{ env.EXTENSION }} ${{ runner.workspace }}/bin/
         env:
           GO111MODULE: on
 
-      - name: show rclone
+      - name: Show rclone
         run: |
-           ls ${{ runner.workspace }}
-           ls ${{ runner.workspace }}/bin
-           ${{ runner.workspace }}/bin/rclone --version
+          ls ${{ runner.workspace }}
+          ls ${{ runner.workspace }}/bin
+          ${{ runner.workspace }}/bin/rclone${{ env.EXTENSION }} --version
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: rclone-binaries
+          name: rclone-binaries-${{ matrix.os }}
           path: ${{ runner.workspace }}/bin
 
   release:
@@ -77,10 +90,26 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
-          go-version: '1.21'  # Set the desired Go version
+          go-version: '1.21'
 
       - name: Download Artifacts
         uses: actions/download-artifact@v2
         with:
-          name: rclone-binaries
+          name: rclone-binaries-${{ matrix.os }}
           path: bin
+
+    #   - name: Create GitHub Release
+    #     id: create_release
+    #     uses: softprops/action-gh-release@v1
+    #     with:
+    #       files: |
+    #         bin/*
+    #       name: Release for ${{ matrix.os }}
+    #     env:
+    #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    #   - name: Publish Release
+    #     run: |
+    #       echo "Release ID: ${{ steps.create_release.outputs.id }}"
+    #     env:
+    #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
