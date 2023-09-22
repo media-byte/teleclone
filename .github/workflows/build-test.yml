@@ -90,7 +90,7 @@ jobs:
             Copy-Item -Path $path -Destination (Join-Path (Split-Path -Path $path) 'make.exe')
         if: matrix.os == 'windows-latest'
         
-    - name: Install Libraries on macOS
+      - name: Install Libraries on macOS
         shell: bash
         run: |
           # https://github.com/Homebrew/brew/issues/15621#issuecomment-1619266788
