@@ -21,43 +21,24 @@
     build:
       if: ${{ github.event.inputs.manual == 'true' || (github.repository == 'media-byte/teleclone' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name)) }}
       timeout-minutes: 60
+      runs-on: ${{ matrix.os }}
       strategy:
         fail-fast: false
         matrix:
-          job_name: ['linux', 'mac_arm64', 'windows']
-  
-      include:
-        - job_name: linux
-          os: ubuntu-latest
-          go: '1.21'
-          gotags: cmount
-          build_flags: '-include "^linux/"'
-          check: true
-          quicktest: true
-          racequicktest: true
-          librclonetest: true
-          deploy: true
-  
-        - job_name: mac_arm64
-          os: macos-11
-          go: '1.21'
-          gotags: 'cmount'
-          build_flags: '-include "^darwin/arm64" -cgo -macos-arch arm64 -cgo-cflags=-I/usr/local/include -cgo-ldflags=-L/usr/local/lib'
-          deploy: true
-  
-        - job_name: windows
-          os: windows-latest
-          go: '1.21'
-          gotags: cmount
-          cgo: '0'
-          build_flags: '-include "^windows/"'
-          build_args: '-buildmode exe'
-          quicktest: true
-          deploy: true
-  
-      name: ${{ matrix.job_name }}
-  
-      runs-on: ${{ matrix.os }}
+          os:
+            - ubuntu-latest
+            - macos-11
+            - windows-latest
+          go: ['1.21']
+          gotags: ['cmount']
+          build_flags: ['-include "^linux/"', '-include "^darwin/arm64" -cgo -macos-arch arm64 -cgo-cflags=-I/usr/local/include -cgo-ldflags=-L/usr/local/lib', '-include "^windows/"']
+          build_args: ['', '', '-buildmode exe']
+          quicktest: [true, true, true]
+          racequicktest: [true, false, false]
+          librclonetest: [true, false, false]
+          deploy: [true, true, true]
+          
+      name: ${{ matrix.os }}
   
       steps:
         - name: Checkout
