@@ -1,210 +1,145 @@
----
-  name: build
-  
-  # Trigger the workflow on push or pull request
-  on:
-    # push:
-    #   branches:
-    #     - '**'
-    #   tags:
-    #     - '**'
-    # pull_request:
-    workflow_dispatch:
-      inputs:
-        manual:
-          description: Manual run (bypass default conditions)
-          type: boolean
-          required: true
-          default: true
-  
-  jobs:
-    build:
-      if: ${{ github.event.inputs.manual == 'true' || (github.repository == 'media-byte/teleclone' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name)) }}
-      timeout-minutes: 60
-      strategy:
-        fail-fast: false
-        matrix:
-          job_name: ['linux', 'linux_386', 'mac_amd64', 'mac_arm64', 'windows', 'other_os', 'go1.19', 'go1.20']
-  
-          include:
-            - job_name: linux
-              os: ubuntu-latest
-              go: '1.21'
-              gotags: cmount
-              build_flags: '-include "^linux/"'
-              check: true
-              quicktest: true
-              racequicktest: true
-              librclonetest: true
-              deploy: true
-  
-            - job_name: linux_386
-              os: ubuntu-latest
-              go: '1.21'
-              goarch: 386
-              gotags: cmount
-              quicktest: true
-  
-            - job_name: mac_amd64
-              os: macos-11
-              go: '1.21'
-              gotags: 'cmount'
-              build_flags: '-include "^darwin/amd64" -cgo'
-              quicktest: true
-              racequicktest: true
-              deploy: true
-  
-            - job_name: mac_arm64
-              os: macos-11
-              go: '1.21'
-              gotags: 'cmount'
-              build_flags: '-include "^darwin/arm64" -cgo -macos-arch arm64 -cgo-cflags=-I/usr/local/include -cgo-ldflags=-L/usr/local/lib'
-              deploy: true
-  
-            - job_name: windows
-              os: windows-latest
-              go: '1.21'
-              gotags: cmount
-              cgo: '0'
-              build_flags: '-include "^windows/"'
-              build_args: '-buildmode exe'
-              quicktest: true
-              deploy: true
-  
-            - job_name: go1.19
-              os: ubuntu-latest
-              go: '1.19'
-              quicktest: true
-              racequicktest: true
-  
-            - job_name: go1.20
-              os: ubuntu-latest
-              go: '1.20'
-              quicktest: true
-              racequicktest: true
-  
-      name: ${{ matrix.job_name }}
-  
-      runs-on: ${{ matrix.os }}
-  
-      steps:
-        - name: Checkout
-          uses: actions/checkout@v4
-          with:
-            fetch-depth: 0
-  
-        - name: Install Go
-          uses: actions/setup-go@v4
-          with:
-            go-version: ${{ matrix.go }}
-            check-latest: true
-  
-        - name: Set environment variables
-          shell: bash
-          run: |
-            echo 'GOTAGS=${{ matrix.gotags }}' >> $GITHUB_ENV
-            echo 'BUILD_FLAGS=${{ matrix.build_flags }}' >> $GITHUB_ENV
-            echo 'BUILD_ARGS=${{ matrix.build_args }}' >> $GITHUB_ENV
-            if [[ "${{ matrix.goarch }}" != "" ]]; then echo 'GOARCH=${{ matrix.goarch }}' >> $GITHUB_ENV ; fi
-            if [[ "${{ matrix.cgo }}" != "" ]]; then echo 'CGO_ENABLED=${{ matrix.cgo }}' >> $GITHUB_ENV ; fi
-  
-        - name: Install Libraries on Linux
-          shell: bash
-          run: |
+name: Build and Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      manual:
+        description: Manual run (bypass default conditions)
+        type: boolean
+        required: true
+        default: true
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        job_name: ['linux_amd64', 'windows']
+
+        include:
+          - job_name: linux_amd64
+            os: ubuntu-latest
+            go: '1.21'
+            goarch: amd64
+            gotags: cmount
+            build_flags: '-include "^linux/"'
+
+          - job_name: windows
+            os: windows-latest
+            go: '1.21'
+            goarch: ''
+            gotags: cmount
+            build_flags: '-include "^windows/"'
+            build_args: '-buildmode exe'
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.21'
+
+      - name: Set environment variables
+        shell: bash
+        run: |
+            echo "GOTAGS=${{ matrix.gotags }}" >> $GITHUB_ENV
+            echo "BUILD_FLAGS=${{ matrix.build_flags }}" >> $GITHUB_ENV
+            echo "BUILD_ARGS=${{ matrix.build_args }}" >> $GITHUB_ENV
+            echo "GOARCH=${{ matrix.goarch }}" >> $GITHUB_ENV
+            echo "CGO_ENABLED=${{ matrix.cgo }}" >> $GITHUB_ENV
+
+            if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            export EXTENSION=".exe"
+            else
+            export EXTENSION=""
+            fi
+
+      - name: Install Libraries on Linux
+        shell: bash
+        run: |
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" || "${{ matrix.os }}" == "ubuntu-latest-arm64" ]]; then
             sudo modprobe fuse
             sudo chmod 666 /dev/fuse
             sudo chown root:$USER /etc/fuse.conf
             sudo apt-get install fuse3 libfuse-dev rpm pkg-config
-          if: matrix.os == 'ubuntu-latest'
-  
-        - name: Install Libraries on macOS
-          shell: bash
-          run: |
-            # https://github.com/Homebrew/brew/issues/15621#issuecomment-1619266788
-            # https://github.com/orgs/Homebrew/discussions/4612#discussioncomment-6319008
-            unset HOMEBREW_NO_INSTALL_FROM_API
-            brew untap --force homebrew/core
-            brew untap --force homebrew/cask
-            brew update
-            brew install --cask macfuse
-          if: matrix.os == 'macos-11'
-  
-        - name: Install Libraries on Windows
-          shell: powershell
-          run: |
+          fi
+
+      - name: Install Libraries on Windows
+        shell: powershell
+        run: |
             $ProgressPreference = 'SilentlyContinue'
             choco install -y winfsp zip
             echo "CPATH=C:\Program Files\WinFsp\inc\fuse;C:\Program Files (x86)\WinFsp\inc\fuse" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
             if ($env:GOARCH -eq "386") {
-              choco install -y mingw --forcex86 --force
-              echo "C:\\ProgramData\\chocolatey\\lib\\mingw\\tools\\install\\mingw32\\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+                choco install -y mingw --forcex86 --force
+                echo "C:\\ProgramData\\chocolatey\\lib\\mingw\\tools\\install\\mingw32\\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
             }
             # Copy mingw32-make.exe to make.exe so the same command line
             # can be used on Windows as on macOS and Linux
             $path = (get-command mingw32-make.exe).Path
             Copy-Item -Path $path -Destination (Join-Path (Split-Path -Path $path) 'make.exe')
-          if: matrix.os == 'windows-latest'
-  
-        - name: Print Go version and environment
-          shell: bash
-          run: |
-            printf "Using go at: $(which go)\n"
-            printf "Go version: $(go version)\n"
-            printf "\n\nGo environment:\n\n"
-            go env
-            printf "\n\nRclone environment:\n\n"
-            make vars
-            printf "\n\nSystem environment:\n\n"
-            env
-  
-        - name: Go module cache
-          uses: actions/cache@v3
-          with:
-            path: ~/go/pkg/mod
-            key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-            restore-keys: |
-              ${{ runner.os }}-go-
-  
-        - name: Build rclone
-          shell: bash
-          run: |
+        if: matrix.os == 'windows-latest'          
+
+      - name: Build rclone
+        shell: bash
+        run: |
             make
   
-        - name: Rclone version
-          shell: bash
-          run: |
+      - name: Rclone version
+        shell: bash
+        run: |
             rclone version
-  
-        - name: Run tests
-          shell: bash
-          run: |
-            make quicktest
-          if: matrix.quicktest
-  
-        - name: Race test
-          shell: bash
-          run: |
-            make racequicktest
-          if: matrix.racequicktest
-  
-        - name: Run librclone tests
-          shell: bash
-          run: |
-            make -C librclone/ctest test
-            make -C librclone/ctest clean
-            librclone/python/test_rclone.py
-          if: matrix.librclonetest
-  
-        - name: Compile all architectures test
-          shell: bash
-          run: |
-            make
-            make compile_all
-          if: matrix.compile_all
         
-        - name: Built binaries
-          shell: bash
-          run: |
-            if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then make release_dep_linux ; fi
-            if [[ "${{ matrix.os }}" == "windows-latest" ]]; then make release_dep_windows ; fi
-          if: github.head_ref == '' && github.repository == 'media-byte/teleclone'
+      - name: Built binaries
+        shell: bash
+        run: |
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then mkdir -p ${{ runner.workspace }}/bin ; fi
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then mkdir -p ${{ runner.workspace }}\bin ; fi
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then make release_dep_linux ; fi
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then make release_dep_windows ; fi
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then cp ~/go/bin/rclone${{ env.EXTENSION }} ${{ runner.workspace }}/bin/rclone_${{ matrix.goarch }}${{ env.EXTENSION }} ; fi
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then cp D:\a\go\bin\rclone.exe ${{ runner.workspace }}\bin\rclone${{ env.EXTENSION }} ; fi
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: rclone-binaries-${{ matrix.os }}
+          path: ${{ runner.workspace }}/bin
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.21'
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: rclone-binaries-${{ matrix.os }}
+          path: bin
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            bin/*
+          name: Release for ${{ matrix.os }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Publish Release
+        run: |
+          echo "Release ID: ${{ steps.create_release.outputs.id }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}

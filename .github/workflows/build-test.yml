@@ -13,22 +13,22 @@ jobs:
   build:
     strategy:
       matrix:
-        job_name: ['linux', 'linux_arm64', 'windows']
+        job_name: ['linux_amd64', 'mac_arm64', 'windows']
 
         include:
-          - job_name: linux
+          - job_name: linux_amd64
             os: ubuntu-latest
             go: '1.21'
             goarch: amd64
             gotags: cmount
             build_flags: '-include "^linux/"'
 
-          - job_name: linux_arm64
-            os: ubuntu-latest-arm64
+          - job_name: mac_arm64
+            os: macos-11
             go: '1.21'
             goarch: arm64
-            gotags: cmount
-            build_flags: '-include "^linux/"'
+            gotags: 'cmount'
+            build_flags: '-include "^darwin/arm64" -cgo -macos-arch arm64 -cgo-cflags=-I/usr/local/include -cgo-ldflags=-L/usr/local/lib'
 
           - job_name: windows
             os: windows-latest
@@ -103,10 +103,12 @@ jobs:
       - name: Built binaries
         shell: bash
         run: |
-          mkdir -p ${{ runner.workspace }}/bin
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then mkdir -p ${{ runner.workspace }}/bin ; fi
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then mkdir -p ${{ runner.workspace }}\bin ; fi
           if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then make release_dep_linux ; fi
           if [[ "${{ matrix.os }}" == "windows-latest" ]]; then make release_dep_windows ; fi
-          cp ~/go/bin/rclone${{ env.EXTENSION }} ${{ runner.workspace }}/bin/rclone_${{ matrix.goarch }}${{ env.EXTENSION }}
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then cp ~/go/bin/rclone${{ env.EXTENSION }} ${{ runner.workspace }}/bin/rclone_${{ matrix.goarch }}${{ env.EXTENSION }} ; fi
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then cp D:\a\go\bin\rclone.exe ${{ runner.workspace }}\bin\rclone${{ env.EXTENSION }} ; fi
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v2
