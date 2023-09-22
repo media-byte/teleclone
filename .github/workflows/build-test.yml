@@ -91,14 +91,16 @@ jobs:
         run: |
             echo "----WD---"            
             ls ${{ runner.workspace }}
-            echo "----WD/Bin---"
-            ls ${{ runner.workspace }}/bin
             echo "----go env---"            
             go env GOPATH
-            echo "----WD/go---"
-            ls ${{ runner.workspace }}/go
-            echo "----WD/go/bin---"
-            ls ${{ runner.workspace }}/go/bin
+            echo "----/---"
+            ls /
+            echo "----/home---"
+            ls /home
+            echo "----/home---"
+            find ~ | sed -e "s/[^-][^\/]*\// |/g" -e "s/|\([^ ]\)/|-\1/"            
+            echo "----~/go/bin---"
+            ls ~/go/bin
 
     #   - name: Build rclone
     #     run: |
