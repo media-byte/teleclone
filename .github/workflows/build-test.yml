@@ -124,13 +124,26 @@ jobs:
             if [[ "${{ matrix.os }}" == "windows-latest" ]]; then cp ~/go/bin/rclone.exe D:/a/teleclone/bin/rclone.exe ; fi
             if [[ "${{ matrix.os }}" == "macos-11" ]]; then cp ~/go/bin/rclone${{ env.EXTENSION }} ${{ runner.workspace }}/bin/rclone_arm64${{ env.EXTENSION }} ; fi
 
-      - name: Upload Artifacts
+      - name: Upload Artifacts - Linux
         uses: actions/upload-artifact@v2
         with:
           name: rclone-binaries-${{ matrix.os }}
-          path: |
-            if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then ${{ runner.workspace }}/bin ; fi
-            if [[ "${{ matrix.os }}" == "windows-latest" ]]; then D:/a/teleclone/bin ; fi
+          path: ${{ runner.workspace }}/bin
+        if: matrix.os == 'ubuntu-latest'
+
+      - name: Upload Artifacts - Mac-arm64
+        uses: actions/upload-artifact@v2
+        with:
+          name: rclone-binaries-${{ matrix.os }}
+          path: ${{ runner.workspace }}/bin
+        if: matrix.os == 'macos-11'
+        
+      - name: Upload Artifacts - Windows
+        uses: actions/upload-artifact@v2
+        with:
+          name: rclone-binaries-${{ matrix.os }}
+          path: D:/a/teleclone/bin
+        if: matrix.os == 'windows-latest'    
 
   release:
     needs: build
