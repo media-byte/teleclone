@@ -18,7 +18,7 @@ jobs:
   build:
     strategy:
       matrix:
-        job_name: ['linux_amd64', 'linux_arm64', 'windows']
+        job_name: ['linux_amd64', 'linux_arm64']
 
         include:
           - job_name: linux_amd64
@@ -35,13 +35,13 @@ jobs:
             gotags: 'cmount'
             build_flags: '-include "^linux/"'
 
-          - job_name: windows
-            os: windows-latest
-            go: '1.21'
-            goarch: ''
-            gotags: cmount
-            build_flags: '-include "^windows/"'
-            build_args: '-buildmode exe'
+          # - job_name: windows
+          #   os: windows-latest
+          #   go: '1.21'
+          #   goarch: ''
+          #   gotags: cmount
+          #   build_flags: '-include "^windows/"'
+          #   build_args: '-buildmode exe'
 
     runs-on: ${{ matrix.os }}
 
@@ -84,21 +84,21 @@ jobs:
             sudo apt-get -y install fuse3 libfuse-dev rpm pkg-config
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'self-hosted'
 
-      - name: Install Libraries on Windows
-        shell: powershell
-        run: |
-            $ProgressPreference = 'SilentlyContinue'
-            choco install -y winfsp zip
-            echo "CPATH=C:\Program Files\WinFsp\inc\fuse;C:\Program Files (x86)\WinFsp\inc\fuse" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-            if ($env:GOARCH -eq "386") {
-                choco install -y mingw --forcex86 --force
-                echo "C:\\ProgramData\\chocolatey\\lib\\mingw\\tools\\install\\mingw32\\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-            }
-            # Copy mingw32-make.exe to make.exe so the same command line
-            # can be used on Windows as on macOS and Linux
-            $path = (get-command mingw32-make.exe).Path
-            Copy-Item -Path $path -Destination (Join-Path (Split-Path -Path $path) 'make.exe')
-        if: matrix.os == 'windows-latest'
+      # - name: Install Libraries on Windows
+      #   shell: powershell
+      #   run: |
+      #       $ProgressPreference = 'SilentlyContinue'
+      #       choco install -y winfsp zip
+      #       echo "CPATH=C:\Program Files\WinFsp\inc\fuse;C:\Program Files (x86)\WinFsp\inc\fuse" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      #       if ($env:GOARCH -eq "386") {
+      #           choco install -y mingw --forcex86 --force
+      #           echo "C:\\ProgramData\\chocolatey\\lib\\mingw\\tools\\install\\mingw32\\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      #       }
+      #       # Copy mingw32-make.exe to make.exe so the same command line
+      #       # can be used on Windows as on macOS and Linux
+      #       $path = (get-command mingw32-make.exe).Path
+      #       Copy-Item -Path $path -Destination (Join-Path (Split-Path -Path $path) 'make.exe')
+      #   if: matrix.os == 'windows-latest'
 
       - name: Build rclone
         shell: bash
@@ -114,12 +114,20 @@ jobs:
         shell: bash
         run: |
             if [[ "${{ matrix.os }}" == "ubuntu-latest" || "${{ matrix.os }}" == "self-hosted" ]]; then mkdir -p ${{ runner.workspace }}/bin ; fi
-            if [[ "${{ matrix.os }}" == "windows-latest" ]]; then mkdir -p D:/a/teleclone/bin ; fi
             if [[ "${{ matrix.os }}" == "ubuntu-latest" || "${{ matrix.os }}" == "self-hosted" ]]; then make release_dep_linux ; fi
-            if [[ "${{ matrix.os }}" == "windows-latest" ]]; then make release_dep_windows ; fi
             if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then cp ~/go/bin/rclone${{ env.EXTENSION }} ${{ runner.workspace }}/bin/rclone_${{ matrix.goarch }}${{ env.EXTENSION }} ; fi
             if [[ "${{ matrix.os }}" == "self-hosted" ]]; then cp ~/go/bin/rclone${{ env.EXTENSION }} ${{ runner.workspace }}/bin/rclone_arm64${{ env.EXTENSION }} ; fi
-            if [[ "${{ matrix.os }}" == "windows-latest" ]]; then cp ~/go/bin/rclone.exe D:/a/teleclone/bin/rclone.exe ; fi
+
+      # - name: Built binaries
+      #   shell: bash
+      #   run: |
+      #       if [[ "${{ matrix.os }}" == "ubuntu-latest" || "${{ matrix.os }}" == "self-hosted" ]]; then mkdir -p ${{ runner.workspace }}/bin ; fi
+      #       if [[ "${{ matrix.os }}" == "windows-latest" ]]; then mkdir -p D:/a/teleclone/bin ; fi
+      #       if [[ "${{ matrix.os }}" == "ubuntu-latest" || "${{ matrix.os }}" == "self-hosted" ]]; then make release_dep_linux ; fi
+      #       if [[ "${{ matrix.os }}" == "windows-latest" ]]; then make release_dep_windows ; fi
+      #       if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then cp ~/go/bin/rclone${{ env.EXTENSION }} ${{ runner.workspace }}/bin/rclone_${{ matrix.goarch }}${{ env.EXTENSION }} ; fi
+      #       if [[ "${{ matrix.os }}" == "self-hosted" ]]; then cp ~/go/bin/rclone${{ env.EXTENSION }} ${{ runner.workspace }}/bin/rclone_arm64${{ env.EXTENSION }} ; fi
+      #       if [[ "${{ matrix.os }}" == "windows-latest" ]]; then cp ~/go/bin/rclone.exe D:/a/teleclone/bin/rclone.exe ; fi
 
       - name: Upload Artifacts - Linux
         uses: actions/upload-artifact@v2
@@ -128,18 +136,18 @@ jobs:
           path: ${{ runner.workspace }}/bin
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'self-hosted'
         
-      - name: Upload Artifacts - Windows
-        uses: actions/upload-artifact@v2
-        with:
-          name: rclone-binaries-${{ matrix.os }}
-          path: D:/a/teleclone/bin
-        if: matrix.os == 'windows-latest'        
+      # - name: Upload Artifacts - Windows
+      #   uses: actions/upload-artifact@v2
+      #   with:
+      #     name: rclone-binaries-${{ matrix.os }}
+      #     path: D:/a/teleclone/bin
+      #   if: matrix.os == 'windows-latest'        
 
       - name: Create and Push Tag - Linux
         run: |
-          NEW_TAG="v7.0-${{ matrix.os }}"
+          NEW_TAG="v8.0-${{ matrix.os }}"
           if [ -z "$(git tag -l "$NEW_TAG")" ]; then
-            git tag -a "$NEW_TAG" -m "Release version 7.0 for ${{ matrix.os }}"
+            git tag -a "$NEW_TAG" -m "Release version 8.0 for ${{ matrix.os }}"
             git push origin "$NEW_TAG"
             echo "Created and pushed tag $NEW_TAG"
           else
@@ -149,27 +157,27 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'self-hosted'
 
-      - name: Create and Push Tag - Windows
-        run: |
-          set NEW_TAG=v7.0-${{ matrix.os }}
-          git tag -l %NEW_TAG% | findstr /C:"%NEW_TAG%" > nul
-          if errorlevel 1 (
-            git tag -a %NEW_TAG% -m "Release version 7.0 for ${{ matrix.os }}"
-            git push origin %NEW_TAG%
-            echo Created and pushed tag %NEW_TAG%
-          ) else (
-            echo Tag %NEW_TAG% already exists. Skipping tag creation.
-          )
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-        if: matrix.os == 'windows-latest' 
+      # - name: Create and Push Tag - Windows
+      #   run: |
+      #     set NEW_TAG=v7.0-${{ matrix.os }}
+      #     git tag -l %NEW_TAG% | findstr /C:"%NEW_TAG%" > nul
+      #     if errorlevel 1 (
+      #       git tag -a %NEW_TAG% -m "Release version 7.0 for ${{ matrix.os }}"
+      #       git push origin %NEW_TAG%
+      #       echo Created and pushed tag %NEW_TAG%
+      #     ) else (
+      #       echo Tag %NEW_TAG% already exists. Skipping tag creation.
+      #     )
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+      #   if: matrix.os == 'windows-latest' 
 
   release:
     needs: build
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, self-hosted]
+        os: [ubuntu-latest, self-hosted]
 
     steps:
       - name: Checkout
