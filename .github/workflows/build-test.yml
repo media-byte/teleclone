@@ -12,10 +12,6 @@ on:
 jobs:
   build:
     strategy:
-    #   matrix:
-        # os: [ubuntu-latest, ubuntu-latest-arm64, windows-latest]
-        # goarch: [amd64]
-        # gotags: [cmount]
       matrix:
         job_name: ['linux', 'windows']
 
@@ -23,19 +19,21 @@ jobs:
           - job_name: linux
             os: ubuntu-latest
             go: '1.21'
+            goarch: amd64
             gotags: cmount
             build_flags: '-include "^linux/"'
 
-        #   - job_name: linux_arm64
-        #     os: ubuntu-latest
-        #     go: '1.21'
-        #     goarch: arm64
-        #     gotags: cmount
-        #     build_flags: '-include "^linux/"'
+          - job_name: linux_arm64
+            os: ubuntu-latest-arm64
+            go: '1.21'
+            goarch: arm64
+            gotags: cmount
+            build_flags: '-include "^linux/"'
 
           - job_name: windows
             os: windows-latest
             go: '1.21'
+            goarch: ''
             gotags: cmount
             build_flags: '-include "^windows/"'
             build_args: '-buildmode exe'
@@ -54,11 +52,17 @@ jobs:
       - name: Set environment variables
         shell: bash
         run: |
-          echo "GOTAGS=${{ matrix.gotags }}" >> $GITHUB_ENV
-          echo "BUILD_FLAGS=${{ matrix.build_flags }}" >> $GITHUB_ENV
-          echo "BUILD_ARGS=${{ matrix.build_args }}" >> $GITHUB_ENV
-          echo "GOARCH=${{ matrix.goarch }}" >> $GITHUB_ENV
-          echo "CGO_ENABLED=${{ matrix.cgo }}" >> $GITHUB_ENV
+            echo "GOTAGS=${{ matrix.gotags }}" >> $GITHUB_ENV
+            echo "BUILD_FLAGS=${{ matrix.build_flags }}" >> $GITHUB_ENV
+            echo "BUILD_ARGS=${{ matrix.build_args }}" >> $GITHUB_ENV
+            echo "GOARCH=${{ matrix.goarch }}" >> $GITHUB_ENV
+            echo "CGO_ENABLED=${{ matrix.cgo }}" >> $GITHUB_ENV
+
+            if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            export EXTENSION=".exe"
+            else
+            export EXTENSION=""
+            fi
 
       - name: Install Libraries on Linux
         shell: bash
@@ -101,82 +105,45 @@ jobs:
         run: |
           if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then make release_dep_linux ; fi
           if [[ "${{ matrix.os }}" == "windows-latest" ]]; then make release_dep_windows ; fi
+          cp ~/go/bin/rclone${{ env.EXTENSION }} ${{ runner.workspace }}/bin/rclone_${{ matrix.goarch }}${{ env.EXTENSION }}
 
-      - name: Check Paths
-        shell: bash
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: rclone-binaries-${{ matrix.os }}
+          path: ${{ runner.workspace }}/bin
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.21'
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: rclone-binaries-${{ matrix.os }}
+          path: bin
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            bin/*
+          name: Release for ${{ matrix.os }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish Release
         run: |
-            echo "----go env---"            
-            go env GOPATH           
-            echo "----~/go/bin---"
-            ls ~/go/bin
-
-    #   - name: Build rclone
-    #     run: |
-    #         mkdir -p ${{ runner.workspace }}/bin
-    #         GOPATH="${{ runner.workspace }}/go" make # Set GOPATH temporarily and add GOTAGS
-    #         if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-    #           BINARY_NAME="rclone.exe"
-    #         else
-    #           BINARY_NAME="rclone"
-    #         fi
-    #         cp ${{ runner.workspace }}/go/bin/$BINARY_NAME ${{ runner.workspace }}/bin/
-    #         echo "----WD---"            
-    #         ls ${{ runner.workspace }}
-    #         echo "----WD/Bin---"
-    #         ls ${{ runner.workspace }}/bin
-    #         echo "----go env---"            
-    #         go env GOPATH
-    #         echo "----WD/go---"
-    #         ls ${{ runner.workspace }}/go
-    #         echo "----WD/go/bin---"
-    #         ls ${{ runner.workspace }}/go/bin
-    #     #   cp ${{ runner.workspace }}/rclone${{ env.EXTENSION }} ${{ runner.workspace }}/bin/
-    #     env:
-    #       GO111MODULE: on
-
-#       - name: Show rclone
-#         run: |
-#           ls ${{ runner.workspace }}
-#           ls ${{ runner.workspace }}/bin
-#           ${{ runner.workspace }}/bin/rclone${{ env.EXTENSION }} --version
-
-#       - name: Upload Artifacts
-#         uses: actions/upload-artifact@v2
-#         with:
-#           name: rclone-binaries-${{ matrix.os }}
-#           path: ${{ runner.workspace }}/bin
-
-#   release:
-#     needs: build
-#     runs-on: ubuntu-latest
-
-#     steps:
-#       - name: Checkout
-#         uses: actions/checkout@v2
-
-#       - name: Set up Go
-#         uses: actions/setup-go@v2
-#         with:
-#           go-version: '1.21'
-
-#       - name: Download Artifacts
-#         uses: actions/download-artifact@v2
-#         with:
-#           name: rclone-binaries-${{ matrix.os }}
-#           path: bin
-
-    #   - name: Create GitHub Release
-    #     id: create_release
-    #     uses: softprops/action-gh-release@v1
-    #     with:
-    #       files: |
-    #         bin/*
-    #       name: Release for ${{ matrix.os }}
-    #     env:
-    #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    #   - name: Publish Release
-    #     run: |
-    #       echo "Release ID: ${{ steps.create_release.outputs.id }}"
-    #     env:
-    #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          echo "Release ID: ${{ steps.create_release.outputs.id }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
