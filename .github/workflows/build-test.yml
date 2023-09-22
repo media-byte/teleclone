@@ -13,7 +13,7 @@ jobs:
   build:
     strategy:
       matrix:
-        job_name: ['linux', 'windows']
+        job_name: ['linux', 'linux_arm64', 'windows']
 
         include:
           - job_name: linux
@@ -103,6 +103,7 @@ jobs:
       - name: Built binaries
         shell: bash
         run: |
+          mkdir -p ${{ runner.workspace }}/bin
           if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then make release_dep_linux ; fi
           if [[ "${{ matrix.os }}" == "windows-latest" ]]; then make release_dep_windows ; fi
           cp ~/go/bin/rclone${{ env.EXTENSION }} ${{ runner.workspace }}/bin/rclone_${{ matrix.goarch }}${{ env.EXTENSION }}
