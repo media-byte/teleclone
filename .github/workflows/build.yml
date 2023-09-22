@@ -1,6 +1,11 @@
 name: Build and Test
 
 on:
+  push:
+    branches:
+      - '**'
+    tags:
+      - '**'
   workflow_dispatch:
     inputs:
       manual:
