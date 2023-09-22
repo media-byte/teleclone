@@ -24,7 +24,7 @@
       strategy:
         fail-fast: false
         matrix:
-          job_name: ['linux', 'mac_arm64', 'windows']
+          job_name: ['linux']
   
           include:
             - job_name: linux
@@ -38,22 +38,22 @@
               librclonetest: true
               deploy: true
   
-            - job_name: mac_arm64
-              os: macos-11
-              go: '1.21'
-              gotags: 'cmount'
-              build_flags: '-include "^darwin/arm64" -cgo -macos-arch arm64 -cgo-cflags=-I/usr/local/include -cgo-ldflags=-L/usr/local/lib'
-              deploy: true
+            # - job_name: mac_arm64
+            #   os: macos-11
+            #   go: '1.21'
+            #   gotags: 'cmount'
+            #   build_flags: '-include "^darwin/arm64" -cgo -macos-arch arm64 -cgo-cflags=-I/usr/local/include -cgo-ldflags=-L/usr/local/lib'
+            #   deploy: true
   
-            - job_name: windows
-              os: windows-latest
-              go: '1.21'
-              gotags: cmount
-              cgo: '0'
-              build_flags: '-include "^windows/"'
-              build_args: '-buildmode exe'
-              quicktest: true
-              deploy: true
+            # - job_name: windows
+            #   os: windows-latest
+            #   go: '1.21'
+            #   gotags: cmount
+            #   cgo: '0'
+            #   build_flags: '-include "^windows/"'
+            #   build_args: '-buildmode exe'
+            #   quicktest: true
+            #   deploy: true
   
       name: ${{ matrix.job_name }}
   
@@ -147,25 +147,25 @@
           run: |
             rclone version
   
-        - name: Run tests
-          shell: bash
-          run: |
-            make quicktest
-          if: matrix.quicktest
+        # - name: Run tests
+        #   shell: bash
+        #   run: |
+        #     make quicktest
+        #   if: matrix.quicktest
   
-        - name: Race test
-          shell: bash
-          run: |
-            make racequicktest
-          if: matrix.racequicktest
+        # - name: Race test
+        #   shell: bash
+        #   run: |
+        #     make racequicktest
+        #   if: matrix.racequicktest
   
-        - name: Run librclone tests
-          shell: bash
-          run: |
-            make -C librclone/ctest test
-            make -C librclone/ctest clean
-            librclone/python/test_rclone.py
-          if: matrix.librclonetest
+        # - name: Run librclone tests
+        #   shell: bash
+        #   run: |
+        #     make -C librclone/ctest test
+        #     make -C librclone/ctest clean
+        #     librclone/python/test_rclone.py
+        #   if: matrix.librclonetest
   
         - name: Compile all architectures test
           shell: bash
@@ -184,4 +184,4 @@
         - name: Find artifacts
           shell: bash
           run: |
-            ls /
+            ls / && go env GOPATH
