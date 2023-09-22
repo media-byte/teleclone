@@ -135,12 +135,18 @@ jobs:
           path: D:/a/teleclone/bin
         if: matrix.os == 'windows-latest'        
 
-      - name: Create Tag
+      - name: Create and Push Tag
         run: |
-          git tag -a v2.0 -m "Release version 2.0"
-          git push origin v2.0
+          NEW_TAG="v2.0-${{ matrix.os }}"
+          if git rev-parse -q --verify "refs/tags/$NEW_TAG" >/dev/null; then
+            echo "Tag $NEW_TAG already exists. Skipping tag creation."
+          else
+            git tag -a "$NEW_TAG" -m "Release version 2.0 for ${{ matrix.os }}"
+            git push origin "$NEW_TAG"
+            echo "Created and pushed tag $NEW_TAG"
+          fi
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}        
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}       
 
   release:
     needs: build
