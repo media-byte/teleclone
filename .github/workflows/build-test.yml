@@ -73,15 +73,24 @@ jobs:
           fi
 
       - name: Build rclone
+        shell: bash
         run: |
-            mkdir -p ${{ runner.workspace }}/bin
-            GOPATH="${{ runner.workspace }}/go" make # Set GOPATH temporarily and add GOTAGS
-            if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-              BINARY_NAME="rclone.exe"
-            else
-              BINARY_NAME="rclone"
-            fi
-            cp ${{ runner.workspace }}/go/bin/$BINARY_NAME ${{ runner.workspace }}/bin/
+        make
+  
+      - name: Rclone version
+        shell: bash
+        run: |
+        rclone version
+        
+      - name: Built binaries
+        shell: bash
+        run: |
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then make release_dep_linux ; fi
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then make release_dep_windows ; fi
+
+      - name: Check Paths
+        shell: bash
+        run: |
             echo "----WD---"            
             ls ${{ runner.workspace }}
             echo "----WD/Bin---"
@@ -92,9 +101,30 @@ jobs:
             ls ${{ runner.workspace }}/go
             echo "----WD/go/bin---"
             ls ${{ runner.workspace }}/go/bin
-        #   cp ${{ runner.workspace }}/rclone${{ env.EXTENSION }} ${{ runner.workspace }}/bin/
-        env:
-          GO111MODULE: on
+
+    #   - name: Build rclone
+    #     run: |
+    #         mkdir -p ${{ runner.workspace }}/bin
+    #         GOPATH="${{ runner.workspace }}/go" make # Set GOPATH temporarily and add GOTAGS
+    #         if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+    #           BINARY_NAME="rclone.exe"
+    #         else
+    #           BINARY_NAME="rclone"
+    #         fi
+    #         cp ${{ runner.workspace }}/go/bin/$BINARY_NAME ${{ runner.workspace }}/bin/
+    #         echo "----WD---"            
+    #         ls ${{ runner.workspace }}
+    #         echo "----WD/Bin---"
+    #         ls ${{ runner.workspace }}/bin
+    #         echo "----go env---"            
+    #         go env GOPATH
+    #         echo "----WD/go---"
+    #         ls ${{ runner.workspace }}/go
+    #         echo "----WD/go/bin---"
+    #         ls ${{ runner.workspace }}/go/bin
+    #     #   cp ${{ runner.workspace }}/rclone${{ env.EXTENSION }} ${{ runner.workspace }}/bin/
+    #     env:
+    #       GO111MODULE: on
 
 #       - name: Show rclone
 #         run: |
