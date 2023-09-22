@@ -42,8 +42,6 @@ jobs:
 
     runs-on: ${{ matrix.os }}
 
-    name: ${{ matrix.job_name }}
-
     steps:
       - name: Checkout
         uses: actions/checkout@v2
