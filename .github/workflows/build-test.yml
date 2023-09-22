@@ -62,8 +62,8 @@ jobs:
       - name: Build rclone
         run: |
           mkdir -p ${{ runner.workspace }}/bin
-          make rclone  # No need to set GOPATH as we're using a matrix strategy
-          cp ${{ runner.workspace }}/go/bin/rclone${{ env.EXTENSION }} ${{ runner.workspace }}/bin/
+          make rclone
+          cp ${{ runner.workspace }}/rclone${{ env.EXTENSION }} ${{ runner.workspace }}/bin/
         env:
           GO111MODULE: on
 
