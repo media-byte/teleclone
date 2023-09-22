@@ -48,9 +48,9 @@ jobs:
 
       - name: Build rclone
         run: |
-          make rclone
+          make
           mkdir -p ${{ runner.workspace }}/bin
-          GOPATH="${{ runner.workspace }}/go" make rclone  # Set GOPATH temporarily
+          GOPATH="${{ runner.workspace }}/go" make release_dep_linux  # Set GOPATH temporarily
           cp ${{ runner.workspace }}/go/bin/rclone* ${{ runner.workspace }}/bin  # Copy the binaries
         env:
           GO111MODULE: on
