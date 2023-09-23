@@ -18,7 +18,7 @@ jobs:
   build:
     strategy:
       matrix:
-        job_name: ['linux_amd64']
+        job_name: ['linux_amd64', 'linux_arm64']
 
         include:
           - job_name: linux_amd64
@@ -28,12 +28,12 @@ jobs:
             gotags: cmount
             build_flags: '-include "^linux/"'
 
-          # - job_name: linux_arm64
-          #   os: self-hosted
-          #   go: '1.21'
-          #   goarch: 'arm64'
-          #   gotags: 'cmount'
-          #   build_flags: '-include "^linux/"'
+          - job_name: linux_arm64
+            os: self-hosted
+            go: '1.21'
+            goarch: 'arm64'
+            gotags: 'cmount'
+            build_flags: '-include "^linux/"'
 
     runs-on: ${{ matrix.os }}
 
@@ -75,7 +75,7 @@ jobs:
             sudo modprobe fuse
             sudo chmod 666 /dev/fuse
             sudo chown root:$USER /etc/fuse.conf
-            sudo apt-get -y install fuse3 libfuse-dev rpm pkg-config
+            sudo apt-get -y install fuse3 libfuse-dev rpm pkg-config          
 
       - name: Run build
         run: go build .
@@ -85,19 +85,24 @@ jobs:
         run: |
             ./rclone version
             mkdir ./build
-            cp ./rclone ./build/rclone_amd64
-            
-      - name: Debugging
-        run: |
-          pwd
-          ls -al
-          git config --list
+            if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then cp ./rclone${{ env.EXTENSION }} ./build/rclone_${{ matrix.goarch }}${{ env.EXTENSION }} ; fi
+            if [[ "${{ matrix.os }}" == "self-hosted" ]]; then cp ./rclone${{ env.EXTENSION }} ./build/rclone_arm64${{ env.EXTENSION }} ; fi
+
+      - name: Upload Artifacts - Linux
+        uses: actions/upload-artifact@v2
+        with:
+          name: rclone-binaries-${{ matrix.os }}
+          path: ./build
 
   create_tag_and_release:
     runs-on: ubuntu-latest
     needs: build
-    steps:
 
+    strategy:
+      matrix:
+        os: [ubuntu-latest, self-hosted]
+
+    steps:
       - name: Configure Git
         run: |
           git config --global user.email "hackmonker127001@protonmail.com"
@@ -106,23 +111,39 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
-          repository: media-byte/teleclone
-
-      - name: Debugging
-        run: |
-          pwd
-          ls -al
-          git config --list          
+          repository: media-byte/teleclone         
 
       - name: Create Tag
         id: create_tag
         run: |
-          NEW_TAG="v21.0-${{ matrix.os }}"
+          NEW_TAG="v22.0-${{ matrix.os }}"
           if ! git tag -l | grep -q "$NEW_TAG"; then
-            git tag -a "$NEW_TAG" -m "Release version 21.0 for ${{ matrix.os }}"
+            git tag -a "$NEW_TAG" -m "Release version 22.0 for ${{ matrix.os }}"
             git push origin "$NEW_TAG"
           else
             echo "Tag $NEW_TAG already exists. Skipping tag creation."
           fi
         env:
             GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: rclone-binaries-${{ matrix.os }}
+          path: build
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            build/*
+          name: Release for ${{ matrix.os }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Publish Release
+        run: |
+          echo "Release ID: ${{ steps.create_release.outputs.id }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
