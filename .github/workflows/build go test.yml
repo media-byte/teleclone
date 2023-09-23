@@ -18,7 +18,7 @@ jobs:
   build:
     strategy:
       matrix:
-        job_name: ['linux_amd64']
+        job_name: ['linux_amd64', 'linux_arm64', 'windows']
 
         include:
           - job_name: linux_amd64
