@@ -118,7 +118,7 @@ jobs:
       - name: Upload Artifacts - Linux
         uses: actions/upload-artifact@v2
         with:
-          name: teleclone-binaries-${{ matrix.os }}
+          name: teleclone-binaries
           path: ./build
 
   create_tag_and_release:
@@ -151,7 +151,7 @@ jobs:
         id: tag
         run: |
           # See https://docs.github.com/en/get-started/using-git/dealing-with-special-characters-in-branch-and-tag-names
-          TAG=v$(date -Iseconds | sed 's/[T:\+]/-/g')-${{ matrix.os }}
+          TAG=v$(date -Iseconds | sed 's/[T:\+]/-/g')
           echo "$TAG"
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           git tag -a $TAG -m "Published version $TAG" ${GITHUB_SHA}
