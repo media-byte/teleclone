@@ -28,12 +28,20 @@ jobs:
             gotags: cmount
             build_flags: '-include "^linux/"'
 
-          # - job_name: linux_arm64
-          #   os: self-hosted
-          #   go: '1.21'
-          #   goarch: 'arm64'
-          #   gotags: 'cmount'
-          #   build_flags: '-include "^linux/"'
+          - job_name: linux_arm64
+            os: self-hosted
+            go: '1.21'
+            goarch: 'arm64'
+            gotags: 'cmount'
+            build_flags: '-include "^linux/"'
+
+          - job_name: windows
+            os: windows-latest
+            go: '1.21'
+            goarch: ''
+            gotags: cmount
+            build_flags: '-include "^windows/"'
+            build_args: '-buildmode exe'          
 
     runs-on: ${{ matrix.os }}
 
@@ -76,7 +84,24 @@ jobs:
             sudo modprobe fuse
             sudo chmod 666 /dev/fuse
             sudo chown root:$USER /etc/fuse.conf
-            sudo apt-get -y install fuse3 libfuse-dev rpm pkg-config          
+            sudo apt-get -y install fuse3 libfuse-dev rpm pkg-config
+        if: matrix.os == 'ubuntu-latest' || matrix.os == 'self-hosted'            
+            
+      - name: Install Libraries on Windows
+        shell: powershell
+        run: |
+            $ProgressPreference = 'SilentlyContinue'
+            choco install -y winfsp zip
+            echo "CPATH=C:\Program Files\WinFsp\inc\fuse;C:\Program Files (x86)\WinFsp\inc\fuse" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            if ($env:GOARCH -eq "386") {
+                choco install -y mingw --forcex86 --force
+                echo "C:\\ProgramData\\chocolatey\\lib\\mingw\\tools\\install\\mingw32\\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+            }
+            # Copy mingw32-make.exe to make.exe so the same command line
+            # can be used on Windows as on macOS and Linux
+            $path = (get-command mingw32-make.exe).Path
+            Copy-Item -Path $path -Destination (Join-Path (Split-Path -Path $path) 'make.exe')
+        if: matrix.os == 'windows-latest'
 
       - name: Run build
         run: go build .
@@ -88,6 +113,7 @@ jobs:
             mkdir ./build
             if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then cp ./rclone${{ env.EXTENSION }} ./build/rclone_${{ matrix.goarch }}${{ env.EXTENSION }} ; fi
             if [[ "${{ matrix.os }}" == "self-hosted" ]]; then cp ./rclone${{ env.EXTENSION }} ./build/rclone_arm64${{ env.EXTENSION }} ; fi
+            if [[ "${{ matrix.os }}" == "windows-latest" ]]; then cp ./rclone${{ env.EXTENSION }} ./build/rclone${{ env.EXTENSION }} ; fi
 
       - name: Upload Artifacts - Linux
         uses: actions/upload-artifact@v2
