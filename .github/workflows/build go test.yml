@@ -86,6 +86,12 @@ jobs:
             ./rclone version
             mkdir ./build
             cp ./rclone ./build/rclone_amd64
+            
+      - name: Debugging
+        run: |
+          pwd
+          ls -al
+          git config --list
 
   create_tag:
     runs-on: ubuntu-latest
