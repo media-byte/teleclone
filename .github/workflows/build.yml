@@ -121,57 +121,57 @@ jobs:
           name: teleclone-binaries-${{ matrix.os }}
           path: ./build
 
-create_tag_and_release:
-  runs-on: ubuntu-latest
-  needs: build
-
-  strategy:
-    matrix:
-      os: [ubuntu-latest, 'self-hosted', 'windows-latest']
-
-  steps:
-    - name: Configure Git
-      run: |
-        git config --global user.email "hackmonker127001@protonmail.com"
-        git config --global user.name "hackmonker"
-
-    - name: Checkout
-      uses: actions/checkout@v2
-      with:
-        repository: media-byte/teleclone
-        ref: ${{ github.ref }}         
-
-    - name: Download Artifacts
-      uses: actions/download-artifact@v2
-      with:
-        name: teleclone-binaries-${{ matrix.os }}
-        path: build
-
-    - name: Create Tag
-      id: tag
-      run: |
-        # See https://docs.github.com/en/get-started/using-git/dealing-with-special-characters-in-branch-and-tag-names
-        TAG=v$(date -Iseconds | sed 's/[T:\+]/-/g')-${{ matrix.os }}
-        echo "$TAG"
-        echo "tag=$TAG" >> $GITHUB_OUTPUT
-        git tag -a $TAG -m "Published version $TAG" ${GITHUB_SHA}
-        git push origin $TAG
-      env:
+  create_tag_and_release:
+    runs-on: ubuntu-latest
+    needs: build
+  
+    strategy:
+      matrix:
+        os: [ubuntu-latest, 'self-hosted', 'windows-latest']
+  
+    steps:
+      - name: Configure Git
+        run: |
+          git config --global user.email "hackmonker127001@protonmail.com"
+          git config --global user.name "hackmonker"
+  
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          repository: media-byte/teleclone
+          ref: ${{ github.ref }}         
+  
+      - name: Download Artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: teleclone-binaries-${{ matrix.os }}
+          path: build
+  
+      - name: Create Tag
+        id: tag
+        run: |
+          # See https://docs.github.com/en/get-started/using-git/dealing-with-special-characters-in-branch-and-tag-names
+          TAG=v$(date -Iseconds | sed 's/[T:\+]/-/g')-${{ matrix.os }}
+          echo "$TAG"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          git tag -a $TAG -m "Published version $TAG" ${GITHUB_SHA}
+          git push origin $TAG
+        env:
+            GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+  
+      - name: Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            build/*
+          tag_name: ${{ steps.tag.outputs.tag }}
+        env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-
-    - name: Create GitHub Release
-      id: create_release
-      uses: softprops/action-gh-release@v1
-      with:
-        files: |
-          build/*
-        tag_name: ${{ steps.tag.outputs.tag }}
-      env:
-        GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-
-    - name: Publish Release
-      run: |
-        echo "Release ID: ${{ steps.create_release.outputs.id }}"
-      env:
-        GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-
+  
+      - name: Publish Release
+        run: |
+          echo "Release ID: ${{ steps.create_release.outputs.id }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          
