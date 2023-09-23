@@ -82,7 +82,6 @@ jobs:
         shell: bash
         run: |
             ./rclone version
-            mkdir /Build
             cp ./rclone /Build/rclone_amd64
 
   create_tag:
