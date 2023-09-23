@@ -124,13 +124,12 @@ jobs:
       - name: Create Tag
         id: create_tag
         run: |
-          NEW_TAG="v27.0-${{ matrix.os }}"
-          if ! git tag -l | grep -q "$NEW_TAG"; then
-            git tag -a "$NEW_TAG" -m "Release version 27.0 for ${{ matrix.os }}"
-            git push origin "$NEW_TAG"
-          else
-            echo "Tag $NEW_TAG already exists. Skipping tag creation."
-          fi
+          # See https://docs.github.com/en/get-started/using-git/dealing-with-special-characters-in-branch-and-tag-names
+          TAG=v$(date -Iseconds | sed 's/[T:\+]/-/g')
+          echo "$TAG"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          git tag -a $TAG -m "Published version $TAG" ${GITHUB_SHA}
+          git push origin $TAG
         env:
             GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
@@ -141,6 +140,7 @@ jobs:
           files: |
             build/*
           name: Release for ${{ matrix.os }}
+          tag_name: ${{ steps.tag.outputs.tag }}
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
