@@ -144,7 +144,7 @@ jobs:
       - name: Download Artifacts
         uses: actions/download-artifact@v2
         with:
-          name: teleclone-binaries-${{ matrix.os }}
+          name: teleclone-binaries
           path: build
   
       - name: Create Tag
