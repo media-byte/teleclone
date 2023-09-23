@@ -46,6 +46,8 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          repository: media-byte/teleclone     
 
       - name: Set up Go
         uses: actions/setup-go@v2
