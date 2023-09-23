@@ -18,7 +18,7 @@ jobs:
   build:
     strategy:
       matrix:
-        job_name: ['linux_amd64', 'linux_arm64']
+        job_name: ['linux_amd64']
 
         include:
           - job_name: linux_amd64
@@ -28,12 +28,12 @@ jobs:
             gotags: cmount
             build_flags: '-include "^linux/"'
 
-          - job_name: linux_arm64
-            os: self-hosted
-            go: '1.21'
-            goarch: 'arm64'
-            gotags: 'cmount'
-            build_flags: '-include "^linux/"'
+          # - job_name: linux_arm64
+          #   os: self-hosted
+          #   go: '1.21'
+          #   goarch: 'arm64'
+          #   gotags: 'cmount'
+          #   build_flags: '-include "^linux/"'
 
     runs-on: ${{ matrix.os }}
 
@@ -100,7 +100,7 @@ jobs:
 
     strategy:
       matrix:
-        os: [ubuntu-latest, self-hosted]
+        os: [ubuntu-latest]
 
     steps:
       - name: Configure Git
