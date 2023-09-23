@@ -1,24 +1,24 @@
-name: Build and Test
+name: Build and Release
 
 on:
-#   push:
-#     branches:
-#       - '**'
-#     tags:
+  push:
+    branches:
       - '**'
-    workflow_dispatch:
-      inputs:
-        manual:
-          description: Manual run (bypass default conditions)
-          type: boolean
-          required: true
-          default: true
+    tags:
+      - '**'
+  workflow_dispatch:
+    inputs:
+      manual:
+        description: Manual run (bypass default conditions)
+        type: boolean
+        required: true
+        default: true
 
 jobs:
   build:
     strategy:
       matrix:
-        job_name: ['linux_amd64', 'linux_arm64']
+        job_name: ['linux_amd64', 'linux_arm64', 'windows']
 
         include:
           - job_name: linux_amd64
@@ -35,13 +35,13 @@ jobs:
             gotags: 'cmount'
             build_flags: '-include "^linux/"'
 
-          # - job_name: windows
-          #   os: windows-latest
-          #   go: '1.21'
-          #   goarch: ''
-          #   gotags: cmount
-          #   build_flags: '-include "^windows/"'
-          #   build_args: '-buildmode exe'
+          - job_name: windows
+            os: windows-latest
+            go: '1.21'
+            goarch: ''
+            gotags: cmount
+            build_flags: '-include "^windows/"'
+            build_args: '-buildmode exe'          
 
     runs-on: ${{ matrix.os }}
 
@@ -54,6 +54,9 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          repository: media-byte/teleclone
+          ref: ${{ github.ref }}     
 
       - name: Set up Go
         uses: actions/setup-go@v2
@@ -82,7 +85,8 @@ jobs:
             sudo chmod 666 /dev/fuse
             sudo chown root:$USER /etc/fuse.conf
             sudo apt-get -y install fuse3 libfuse-dev rpm pkg-config
-
+        if: matrix.os == 'ubuntu-latest' || matrix.os == 'self-hosted'            
+            
       - name: Install Libraries on Windows
         shell: powershell
         run: |
@@ -99,124 +103,69 @@ jobs:
             Copy-Item -Path $path -Destination (Join-Path (Split-Path -Path $path) 'make.exe')
         if: matrix.os == 'windows-latest'
 
-      - name: Build rclone
-        shell: bash
-        run: |
-            make
+      - name: Run build
+        run: go build .
   
       - name: Rclone version
         shell: bash
         run: |
-            rclone version
-        
-      - name: Built binaries
-        shell: bash
-        run: |
-            if [[ "${{ matrix.os }}" == "ubuntu-latest" || "${{ matrix.os }}" == "self-hosted" ]]; then mkdir -p ${{ runner.workspace }}/bin ; fi
-            if [[ "${{ matrix.os }}" == "ubuntu-latest" || "${{ matrix.os }}" == "self-hosted" ]]; then make release_dep_linux ; fi
-            if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then cp ~/go/bin/rclone${{ env.EXTENSION }} ${{ runner.workspace }}/bin/rclone_${{ matrix.goarch }}${{ env.EXTENSION }} ; fi
-            if [[ "${{ matrix.os }}" == "self-hosted" ]]; then cp ~/go/bin/rclone${{ env.EXTENSION }} ${{ runner.workspace }}/bin/rclone_arm64${{ env.EXTENSION }} ; fi
-            if [[ "${{ matrix.os }}" == "windows" ]]; then cp ~/go/bin/rclone${{ env.EXTENSION }} ${{ runner.workspace }}/bin/rclone_arm64${{ env.EXTENSION }} ; fi            
-
-      # - name: Built binaries
-      #   shell: bash
-      #   run: |
-      #       if [[ "${{ matrix.os }}" == "ubuntu-latest" || "${{ matrix.os }}" == "self-hosted" ]]; then mkdir -p ${{ runner.workspace }}/bin ; fi
-      #       if [[ "${{ matrix.os }}" == "windows-latest" ]]; then mkdir -p D:/a/teleclone/bin ; fi
-      #       if [[ "${{ matrix.os }}" == "ubuntu-latest" || "${{ matrix.os }}" == "self-hosted" ]]; then make release_dep_linux ; fi
-      #       if [[ "${{ matrix.os }}" == "windows-latest" ]]; then make release_dep_windows ; fi
-      #       if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then cp ~/go/bin/rclone${{ env.EXTENSION }} ${{ runner.workspace }}/bin/rclone_${{ matrix.goarch }}${{ env.EXTENSION }} ; fi
-      #       if [[ "${{ matrix.os }}" == "self-hosted" ]]; then cp ~/go/bin/rclone${{ env.EXTENSION }} ${{ runner.workspace }}/bin/rclone_arm64${{ env.EXTENSION }} ; fi
-      #       if [[ "${{ matrix.os }}" == "windows-latest" ]]; then cp ~/go/bin/rclone.exe D:/a/teleclone/bin/rclone.exe ; fi
+            ./rclone version
+            mkdir ./build
+            if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then cp ./rclone${{ env.EXTENSION }} ./build/rclone_${{ matrix.goarch }}${{ env.EXTENSION }} ; fi
+            if [[ "${{ matrix.os }}" == "self-hosted" ]]; then cp ./rclone${{ env.EXTENSION }} ./build/rclone_arm64${{ env.EXTENSION }} ; fi
+            if [[ "${{ matrix.os }}" == "windows-latest" ]]; then cp ./rclone${{ env.EXTENSION }} ./build/rclone${{ env.EXTENSION }} ; fi
 
       - name: Upload Artifacts - Linux
         uses: actions/upload-artifact@v2
         with:
           name: rclone-binaries-${{ matrix.os }}
-          path: ${{ runner.workspace }}/bin
-        
-      # - name: Upload Artifacts - Windows
-      #   uses: actions/upload-artifact@v2
-      #   with:
-      #     name: rclone-binaries-${{ matrix.os }}
-      #     path: D:/a/teleclone/bin
-      #   if: matrix.os == 'windows-latest'        
+          path: ./build
 
-      # - name: Create and Push Tag - Linux
-      #   run: |
-      #     NEW_TAG="v8.0-${{ matrix.os }}"
-      #     if [ -z "$(git tag -l "$NEW_TAG")" ]; then
-      #       git tag -a "$NEW_TAG" -m "Release version 8.0 for ${{ matrix.os }}"
-      #       git push origin "$NEW_TAG"
-      #       echo "Created and pushed tag $NEW_TAG"
-      #     else
-      #       echo "Tag $NEW_TAG already exists. Skipping tag creation."
-      #     fi
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-        if: matrix.os == 'ubuntu-latest' || matrix.os == 'self-hosted'    
-
-      # - name: Create and Push Tag - Windows
-      #   run: |
-      #     set NEW_TAG=v7.0-${{ matrix.os }}
-      #     git tag -l %NEW_TAG% | findstr /C:"%NEW_TAG%" > nul
-      #     if errorlevel 1 (
-      #       git tag -a %NEW_TAG% -m "Release version 7.0 for ${{ matrix.os }}"
-      #       git push origin %NEW_TAG%
-      #       echo Created and pushed tag %NEW_TAG%
-      #     ) else (
-      #       echo Tag %NEW_TAG% already exists. Skipping tag creation.
-      #     )
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-      #   if: matrix.os == 'windows-latest' 
-
-  create_tag:
+  create_tag_and_release:
     runs-on: ubuntu-latest
     needs: build
-    steps:
-      - name: Create Tag
-        id: create_tag
-        run: |
-          NEW_TAG="v10.0-${{ matrix.os }}"
-          if ! git tag -l | grep -q "$NEW_TAG"; then
-            git tag -a "$NEW_TAG" -m "Release version 10.0 for ${{ matrix.os }}"
-            git push origin "$NEW_TAG"
-          else
-            echo "Tag $NEW_TAG already exists. Skipping tag creation."
-          fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}      
 
-  release:
-    needs: create_tag
-    runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: [ubuntu-latest, self-hosted]
+        os: [ubuntu-latest, 'self-hosted', 'windows-latest']
 
     steps:
+      - name: Configure Git
+        run: |
+          git config --global user.email "hackmonker127001@protonmail.com"
+          git config --global user.name "hackmonker"
+
       - name: Checkout
         uses: actions/checkout@v2
-
-      - name: Set up Go
-        uses: actions/setup-go@v2
         with:
-          go-version: '1.21'
+          repository: media-byte/teleclone
+          ref: ${{ github.ref }}         
 
       - name: Download Artifacts
         uses: actions/download-artifact@v2
         with:
           name: rclone-binaries-${{ matrix.os }}
-          path: bin
+          path: build
+
+      - name: Create Tag
+        id: tag
+        run: |
+          # See https://docs.github.com/en/get-started/using-git/dealing-with-special-characters-in-branch-and-tag-names
+          TAG=v$(date -Iseconds | sed 's/[T:\+]/-/g')
+          echo "$TAG"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          git tag -a $TAG -m "Published version $TAG" ${GITHUB_SHA}
+          git push origin $TAG
+        env:
+            GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
       - name: Create GitHub Release
         id: create_release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            bin/*
-          name: Release for ${{ matrix.os }}
+            build/*
+          tag_name: ${{ steps.tag.outputs.tag }}
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
