@@ -47,7 +47,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
-          repository: media-byte/teleclone     
+          repository: media-byte/teleclone
+          ref: ${{ github.ref }}     
 
       - name: Set up Go
         uses: actions/setup-go@v2
@@ -111,7 +112,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
-          repository: media-byte/teleclone         
+          repository: media-byte/teleclone
+          ref: ${{ github.ref }}         
 
       - name: Create Tag
         id: create_tag
