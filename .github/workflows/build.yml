@@ -111,14 +111,14 @@ jobs:
         run: |
             ./rclone version
             mkdir ./build
-            if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then cp ./rclone${{ env.EXTENSION }} ./build/rclone_${{ matrix.goarch }}${{ env.EXTENSION }} ; fi
-            if [[ "${{ matrix.os }}" == "self-hosted" ]]; then cp ./rclone${{ env.EXTENSION }} ./build/rclone_arm64${{ env.EXTENSION }} ; fi
-            if [[ "${{ matrix.os }}" == "windows-latest" ]]; then cp ./rclone${{ env.EXTENSION }} ./build/rclone${{ env.EXTENSION }} ; fi
+            if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then cp ./rclone${{ env.EXTENSION }} ./build/teleclone_${{ matrix.goarch }}${{ env.EXTENSION }} ; fi
+            if [[ "${{ matrix.os }}" == "self-hosted" ]]; then cp ./rclone${{ env.EXTENSION }} ./build/teleclone_arm64${{ env.EXTENSION }} ; fi
+            if [[ "${{ matrix.os }}" == "windows-latest" ]]; then cp ./rclone${{ env.EXTENSION }} ./build/teleclone${{ env.EXTENSION }} ; fi
 
       - name: Upload Artifacts - Linux
         uses: actions/upload-artifact@v2
         with:
-          name: rclone-binaries-${{ matrix.os }}
+          name: teleclone-binaries-${{ matrix.os }}
           path: ./build
 
   create_tag_and_release:
@@ -144,14 +144,14 @@ jobs:
       - name: Download Artifacts
         uses: actions/download-artifact@v2
         with:
-          name: rclone-binaries-${{ matrix.os }}
+          name: teleclone-binaries-${{ matrix.os }}
           path: build
 
       - name: Create Tag
         id: tag
         run: |
           # See https://docs.github.com/en/get-started/using-git/dealing-with-special-characters-in-branch-and-tag-names
-          TAG=v$(date -Iseconds | sed 's/[T:\+]/-/g')
+          TAG=v$(date -Iseconds | sed 's/[T:\+]/-/g')-${{ matrix.os }}
           echo "$TAG"
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           git tag -a $TAG -m "Published version $TAG" ${GITHUB_SHA}
