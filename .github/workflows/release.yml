@@ -29,7 +29,7 @@ jobs:
             build_flags: '-include "^linux/"'
 
           - job_name: linux_arm64
-            os: self-hosted
+            os: xd003
             go: '1.21'
             goarch: 'arm64'
             gotags: 'cmount'
